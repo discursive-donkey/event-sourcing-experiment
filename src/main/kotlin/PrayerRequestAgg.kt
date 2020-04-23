@@ -1,4 +1,8 @@
-class PrayerRequest : Aggregate<PrayerRequest.State> {
+import api.Aggregate
+import api.Command
+import api.Event
+
+class PrayerRequestAgg : Aggregate<PrayerRequestAgg.State> {
     override fun Aggregate.CommandContext<State>.handleCommand(command: Command) {
         when(command) {
             is CreateCommand -> {

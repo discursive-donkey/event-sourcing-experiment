@@ -1,13 +1,15 @@
+package api
+
 import kotlinx.coroutines.flow.fold
 import java.util.*
 
-class EventSourcingSystemSystem (
-    private val eventStore: EventStore
+class CommandHandler (
+    private val eventStore: EventStore,
+    private val eventQueue: EventQueue
 ) {
     suspend fun <S> handleCommand(aggregate: Aggregate<S>, aggregateId: String?, command: Command) : String {
 
-
-        val currentState : S? = if (aggregateId == null) null else eventStore.allForAggregate(aggregateId).fold<Event, S?>(null) { lastState, event ->
+        val currentState : S? = if (aggregateId == null) null else eventStore.get(aggregate = aggregateId).fold<RecordedEvent, S?>(null) { lastState, event ->
             var nextState : S? = lastState
             aggregate.handleEvent(object : Aggregate.EventContext<S> {
                 override val state get() = nextState
@@ -17,7 +19,7 @@ class EventSourcingSystemSystem (
 
                 override val aggregateId: String?
                     get() = aggregateId
-            }, event)
+            }, event.event)
             nextState
         }
         val events = mutableListOf<Event>()
@@ -40,7 +42,11 @@ class EventSourcingSystemSystem (
 
         val resultingAggregateId = aggregateId ?: UUID.randomUUID().toString()
 
-        events.forEach { eventStore.add(resultingAggregateId, it) }
+        events.forEach {
+            val re = eventStore.add(resultingAggregateId, it)
+            eventQueue.push(re)
+        }
+
         return resultingAggregateId
     }
 }

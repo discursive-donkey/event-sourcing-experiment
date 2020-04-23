@@ -1,3 +1,5 @@
+package api
+
 interface Aggregate<S> {
     fun CommandContext<S>.handleCommand(command: Command)
     fun EventContext<S>.handleEvent(event: Event)
